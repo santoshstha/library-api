@@ -13,6 +13,9 @@ RUN go get -u gorm.io/driver/mysql
 RUN go get -u github.com/gorilla/mux
 RUN go get -u github.com/dgrijalva/jwt-go
 RUN go get -u golang.org/x/crypto/bcrypt
+RUN go get -u github.com/redis/go-redis/v9
+RUN go get -u golang.org/x/time/rate
+RUN go get -u github.com/stretchr/testify/assert
 
 # Copy all source files
 COPY . .

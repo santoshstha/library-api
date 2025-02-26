@@ -6,19 +6,17 @@ import (
 	"github.com/gorilla/mux"
 )
 
-func SetupRouter() *mux.Router {
+func SetupRouter(userCtrl *controllers.UserController, bookCtrl *controllers.BookController) *mux.Router {
 	router := mux.NewRouter()
+	// Apply rate limiting to all routes
+	router.Use(middleware.RateLimit(10, 20)) // 10 req/s, burst 20
 
-	// Public routes
-	router.HandleFunc("/books", controllers.GetBooks).Methods("GET")
-	router.HandleFunc("/books/{id}", controllers.GetBook).Methods("GET")
-	router.HandleFunc("/users", controllers.CreateUser).Methods("POST")
-	router.HandleFunc("/login", controllers.Login).Methods("POST")
-
-	// Protected routes
-	router.HandleFunc("/books", middleware.Authenticate(controllers.CreateBook)).Methods("POST")
-	router.HandleFunc("/books/{id}", middleware.Authenticate(controllers.UpdateBook)).Methods("PUT")
-	router.HandleFunc("/books/{id}", middleware.Authenticate(controllers.DeleteBook)).Methods("DELETE")
-
+	router.HandleFunc("/users", userCtrl.CreateUser).Methods("POST")
+	router.HandleFunc("/login", userCtrl.Login).Methods("POST")
+	router.HandleFunc("/books", bookCtrl.GetBooks).Methods("GET")
+	router.HandleFunc("/books/{id}", bookCtrl.GetBook).Methods("GET")
+	router.HandleFunc("/books", middleware.Authenticate(bookCtrl.CreateBook)).Methods("POST")
+	router.HandleFunc("/books/{id}", middleware.Authenticate(bookCtrl.UpdateBook)).Methods("PUT")
+	router.HandleFunc("/books/{id}", middleware.Authenticate(bookCtrl.DeleteBook)).Methods("DELETE")
 	return router
 }

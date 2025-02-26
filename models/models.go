@@ -4,12 +4,12 @@ import "gorm.io/gorm"
 
 type User struct {
 	gorm.Model
-	Username string `json:"username"`
+	Username string `json:"username" gorm:"uniqueIndex"` // Indexed for fast lookup
 	Password string `json:"password"`
 }
 
 type Book struct {
 	gorm.Model
-	Title  string `json:"title"`
-	Author string `json:"author"`
+	Title  string `json:"title" gorm:"index"`  // Indexed for searches
+	Author string `json:"author" gorm:"index"` // Indexed for searches
 }
