@@ -1,52 +1,99 @@
+Overview
+
+This is a scalable, efficient, and modular RESTful CRUD API built in Go to manage a library system. It allows:
+
+    Users: Register, log in, and get JWT tokens for authentication.
+    Books: Create, read, update, and delete books with caching for reads.
+    Deployment: Runs in Docker with a mounted codebase, connecting to a remote MySQL database and Redis for caching.
+
+The app is optimized for performance with connection pooling, indexed queries, async logging, and unit-tested services.
 Architecture
 
-The system follows a clean, modular architecture:
+The system uses a layered, modular design:
 
-    Layered Design:
-        Controllers: Handle HTTP requests and responses (e.g., creating a book or user).
-        Models: Define the database structure (e.g., User, Book).
-        Routes: Map URLs to controller functions (e.g., /books to GetBooks).
-        Middleware: Add security (JWT authentication for protected routes).
-        Database: Connect to and manage the remote MySQL database.
-    Docker: Runs the app in a container, mounts local code for development, and uses environment variables for configuration.
-    External MySQL: Stores data remotely, accessed via a connection string.
+    Layers:
+        Presentation: HTTP handlers (controllers) and routes (routes).
+        Service: Business logic (services) for users and books.
+        Repository: Database access (repositories) with GORM.
+        Middleware: Security (JWT) and rate limiting.
+        Database: Remote MySQL with connection pooling.
+        Cache: Redis for fast reads.
+        Logger: Async logging with goroutines.
+    Scalability: Supports multiple instances, caching, and rate limiting.
+    Efficiency: Pagination, indexed fields, and non-blocking logs.
+    Modularity: Dependency injection via constructors (New* functions).
 
 Data Flow
 
-    Request: Client sends an HTTP request (e.g., POST /login).
-    Router: Gorilla Mux directs it to the right controller (e.g., Login).
-    Middleware: For protected routes, checks the JWT token.
-    Controller: Processes the request (e.g., verifies login, generates token).
-    Database: GORM interacts with remote MySQL to store or fetch data.
-    Response: JSON is sent back to the client (e.g., {"token": "..."}).
+    Request: Client hits an endpoint (e.g., GET /books).
+    Middleware: Checks JWT (if protected) and rate limits.
+    Controller: Parses request and calls service.
+    Service: Checks cache, runs logic, and interacts with repository.
+    Repository: Queries MySQL (or cache updates).
+    Response: JSON sent back, logged asynchronously.
 
 File Structure
 text
 library-api/
-├── main.go # Entry point, starts the server
+├── main.go
+├── config/
+│ └── config.go
 ├── controllers/
-│ └── bookController.go # Handles CRUD for books, users, and login
+│ └── user.go
+│ └── book.go
+├── services/
+│ └── user.go
+│ └── user_test.go
+│ └── book.go
+│ └── book_test.go
+├── repositories/
+│ └── user.go
+│ └── book.go
 ├── models/
-│ └── models.go # Defines User and Book structs (database tables)
-├── routes/
-│ └── routes.go # Defines API endpoints
+│ └── models.go
 ├── middleware/
-│ └── auth.go # JWT authentication middleware
+│ └── auth.go
+│ └── rate_limit.go
 ├── database/
-│ └── db.go # Database connection logic
-├── Dockerfile # Builds the Go app container
-└── docker-compose.yml # Runs the app with mounted code
+│ └── db.go
+├── cache/
+│ └── redis.go
+├── logger/
+│ └── logger.go
+├── Dockerfile
+└── docker-compose.yml
 Key Components
-Database Tables
-
-Stored in a remote MySQL database named library:
+Database Tables (Remote MySQL)
 
     users:
-        Columns: id (BIGINT, PK), created_at, updated_at, deleted_at, username (VARCHAR), password (VARCHAR, hashed).
-        Purpose: Stores user credentials for authentication.
+        Columns: id (BIGINT, PK), created_at, updated_at, deleted_at, username (VARCHAR, unique index), password (VARCHAR, hashed).
+        Purpose: User authentication.
     books:
-        Columns: id (BIGINT, PK), created_at, updated_at, deleted_at, title (VARCHAR), author (VARCHAR).
-        Purpose: Stores book data for the library.
+        Columns: id (BIGINT, PK), created_at, updated_at, deleted_at, title (VARCHAR, index), author (VARCHAR, index).
+        Purpose: Book management.
+
+Endpoints
+
+    Public:
+        POST /users: Create a user.
+        POST /login: Login and get JWT.
+        GET /books: List books (cached).
+        GET /books/{id}: Get a book.
+    Protected (JWT):
+        POST /books: Create a book.
+        PUT /books/{id}: Update a book.
+        DELETE /books/{id}: Delete a book.
+
+Technologies
+
+    Go: Core language.
+    GORM: MySQL ORM.
+    Gorilla Mux: Routing.
+    JWT: Authentication (jwt-go).
+    Bcrypt: Password hashing.
+    Redis: Caching (go-redis).
+    Testify: Unit testing.
+    Docker: Containerization.
 
 Endpoints
 
