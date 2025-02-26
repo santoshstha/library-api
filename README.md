@@ -297,5 +297,3 @@ Notes
     Token: Replace <token> with the actual JWT from /login. It’s long and starts with eyJ....
     Remote MySQL: Ensure your DB_* environment variables in docker-compose.yml match your remote MySQL setup.
     Errors: If you get 401 Unauthorized, check the token. If connection refused, verify MySQL details.
-
-This covers all your endpoints! Let me know if you want to test something specific or add more features. Ready to run these?
