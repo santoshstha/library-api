@@ -156,7 +156,7 @@ endpoint docs
 
 curl -X POST http://localhost:8080/users \
  -H "Content-Type: application/json" \
- -d '{"username": "john_doe", "password": "mypassword123"}'
+ -d '{"username": "john_doe", "password": "mypassword123",,"email":"test@test.com"}'
 Response (201 Created):
 json
 
@@ -344,3 +344,5 @@ Notes
     Token: Replace <token> with the actual JWT from /login. It’s long and starts with eyJ....
     Remote MySQL: Ensure your DB_* environment variables in docker-compose.yml match your remote MySQL setup.
     Errors: If you get 401 Unauthorized, check the token. If connection refused, verify MySQL details.
+
+curl -X POST http://localhost:8080/bulk-emails -H "Authorization: Bearer token"

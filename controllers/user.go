@@ -1,13 +1,13 @@
 package controllers
 
 import (
-	"fmt"
 	"encoding/json"
 	"net/http"
 	"os"
 	"time"
 	"library-api/services"
 	"github.com/dgrijalva/jwt-go"
+	"library-api/models"
 )
 
 type UserController struct {
@@ -22,18 +22,17 @@ func (c *UserController) CreateUser(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Username string `json:"username"`
 		Password string `json:"password"`
+		Email    string `json:"email"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
-	user, err := c.Service.CreateUser(req.Username, req.Password)
+	user, err := c.Service.CreateUser(req.Username, req.Password, req.Email)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	fmt.Println("User created successfully!")
-	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(user)
 }
@@ -61,7 +60,25 @@ func (c *UserController) Login(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to generate token", http.StatusInternalServerError)
 		return
 	}
-	fmt.Println("Login successful, token generated!")
-    w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{"token": tokenString})
+}
+
+func (c *UserController) SendBulkEmails(w http.ResponseWriter, r *http.Request) {
+	users, err := c.Service.Repo.DB.Find(&[]models.User{}).Rows()
+	if err != nil {
+		http.Error(w, "Failed to fetch users", http.StatusInternalServerError)
+		return
+	}
+	defer users.Close()
+
+	var emails []string
+	for users.Next() {
+		var user models.User
+		c.Service.Repo.DB.ScanRows(users, &user)
+		if user.Email != "" {
+			emails = append(emails, user.Email)
+		}
+	}
+	c.Service.EmailService.SendBulk(emails, "Library Update", "New books added!")
+	w.Write([]byte("Bulk emails queued"))
 }

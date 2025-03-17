@@ -6,6 +6,7 @@ type User struct {
 	gorm.Model
 	Username string `json:"username" gorm:"uniqueIndex"` // Indexed for fast lookup
 	Password string `json:"password"`
+	Email string  `json:"email"` 
 }
 
 type Book struct {

@@ -8,7 +8,7 @@ import (
 	"library-api/models"
 	"library-api/repositories"
 	"time"
-	"library-api/logger" // Import logger
+	// "library-api/logger" // Import logger
 )
 
 type BookService struct {
@@ -36,20 +36,20 @@ func (s *BookService) GetBooks(limit, offset int) ([]models.Book, error) {
 
 	err := s.Cache.Get(cacheKey, &books)
 	if err == nil {
-		logger.Logger.Log("Cache hit for books")
+		fmt.Sprintf("Cache hit for books")
 		return books, nil
 	}
 
 	books, err = s.Repo.FindAll(limit, offset)
 	if err != nil {
-		logger.Logger.Log(fmt.Sprintf("Error fetching books: %v", err))
+		(fmt.Sprintf("Error fetching books: %v", err))
 		return nil, err
 	}
 
 	if err := s.Cache.Set(cacheKey, books, 5*time.Minute); err != nil {
-		logger.Logger.Log(fmt.Sprintf("Failed to set cache: %v", err))
+		(fmt.Sprintf("Failed to set cache: %v", err))
 	}
-	logger.Logger.Log("Books fetched from DB and cached")
+	// ("Books fetched from DB and cached")
 	return books, nil
 }
 
