@@ -6,7 +6,7 @@ import (
 	"net/smtp"
 	"sync"
 	"time"
-	"library-api/logger" // Correct import
+	"library-api/logger"
 )
 
 // Email represents an email job
