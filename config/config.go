@@ -13,6 +13,10 @@ type Config struct {
 	DBPassword string
 	DBName     string
 	RedisAddr  string
+	SMTPHost   string
+	SMTPPort   string
+	SMTPUser   string
+	SMTPPass   string
 }
 
 func LoadConfig() *Config {
@@ -25,5 +29,9 @@ func LoadConfig() *Config {
 		DBPassword: os.Getenv("DB_PASSWORD"),
 		DBName:     os.Getenv("DB_NAME"),
 		RedisAddr:  os.Getenv("REDIS_ADDR"),
+		SMTPHost:   os.Getenv("SMTP_HOST"),
+		SMTPPort:   os.Getenv("SMTP_PORT"),
+		SMTPUser:   os.Getenv("SMTP_USER"),
+		SMTPPass:   os.Getenv("SMTP_PASS"),
 	}
 }

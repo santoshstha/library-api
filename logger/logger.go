@@ -6,28 +6,25 @@ import (
 	"sync"
 )
 
-var Logger *AsyncLogger // Export Logger globally
-
 type AsyncLogger struct {
 	logger *log.Logger
 	ch     chan string
 	wg     sync.WaitGroup
 }
 
-func InitLogger() { // Initialize the global Logger
-	if Logger == nil {
-		Logger = &AsyncLogger{
-			logger: log.New(os.Stdout, "", log.LstdFlags),
-			ch:     make(chan string, 100),
-		}
-		Logger.wg.Add(1)
-		go func() {
-			defer Logger.wg.Done()
-			for msg := range Logger.ch {
-				Logger.logger.Println(msg)
-			}
-		}()
+func NewAsyncLogger() *AsyncLogger {
+	l := &AsyncLogger{
+		logger: log.New(os.Stdout, "", log.LstdFlags),
+		ch:     make(chan string, 100),
 	}
+	l.wg.Add(1)
+	go func() {
+		defer l.wg.Done()
+		for msg := range l.ch {
+			l.logger.Println(msg)
+		}
+	}()
+	return l
 }
 
 func (l *AsyncLogger) Log(msg string) {
