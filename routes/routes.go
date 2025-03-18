@@ -19,5 +19,6 @@ func SetupRouter(userCtrl *controllers.UserController, bookCtrl *controllers.Boo
 	router.HandleFunc("/books/{id}", middleware.Authenticate(bookCtrl.UpdateBook)).Methods("PUT")
 	router.HandleFunc("/books/{id}", middleware.Authenticate(bookCtrl.DeleteBook)).Methods("DELETE")
 	router.HandleFunc("/bulk-emails", middleware.Authenticate(userCtrl.SendBulkEmails)).Methods("POST")
+	router.HandleFunc("/bulk-emails/status", middleware.Authenticate(userCtrl.GetBulkEmailStatus)).Methods("GET")
 	return router
 }

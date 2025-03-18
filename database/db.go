@@ -5,7 +5,7 @@ import (
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"library-api/config"
-	"library-api/logger" // Correct import
+	"library-api/logger"
 	"time"
 )
 
@@ -22,7 +22,7 @@ func InitDB(cfg *config.Config, logger *logger.AsyncLogger) {
 			sqlDB.SetMaxIdleConns(10)
 			sqlDB.SetMaxOpenConns(100)
 			sqlDB.SetConnMaxLifetime(time.Hour)
-			logger.Log("Connected to remote database!") // Line 25
+			logger.Log("Connected to remote database!")
 			return
 		}
 		logger.Log(fmt.Sprintf("Retrying DB connection (%d/10): %v", i+1, err)) // Line 28

@@ -23,7 +23,7 @@ func main() {
 	Logger = logger.NewAsyncLogger()
 	defer Logger.Close()
 
-	database.InitDB(cfg, Logger) // Pass Logger
+	database.InitDB(cfg, Logger)
 	database.DB.AutoMigrate(&models.User{}, &models.Book{})
 
 	redisCache := cache.NewCache(cfg.RedisAddr)
