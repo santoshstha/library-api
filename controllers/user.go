@@ -2,6 +2,7 @@ package controllers
 
 import (
     "encoding/json"
+    "fmt"
     "net/http"
     "os"
     "time"
@@ -88,6 +89,75 @@ func (c *UserController) SendBulkEmails(w http.ResponseWriter, r *http.Request) 
     })
 }
 
+func (c *UserController) StreamBulkEmailStatus(w http.ResponseWriter, r *http.Request) {
+    taskID := r.URL.Query().Get("task_id")
+    if taskID == "" {
+        http.Error(w, "Missing task_id", http.StatusBadRequest)
+        return
+    }
+
+    task, ok := c.Service.EmailService.GetTaskStatus(taskID)
+    if !ok {
+        http.Error(w, "Task not found", http.StatusNotFound)
+        return
+    }
+
+    // Set SSE headers
+    w.Header().Set("Content-Type", "text/event-stream")
+    w.Header().Set("Cache-Control", "no-cache")
+    w.Header().Set("Connection", "keep-alive")
+
+    flusher, ok := w.(http.Flusher)
+    if !ok {
+        http.Error(w, "Streaming not supported", http.StatusInternalServerError)
+        return
+    }
+
+    // Stream updates
+    type EmailStatusResponse struct {
+        Email  string `json:"email"`
+        ID     string `json:"id"`
+        Status string `json:"status"`
+        Time   string `json:"time"`
+    }
+
+    for status := range task.Updates {
+        var email string
+        for e, id := range task.Emails {
+            if id == status.ID {
+                email = e
+                break
+            }
+        }
+        resp := EmailStatusResponse{
+            Email:  email,
+            ID:     status.ID,
+            Status: status.Status,
+            Time:   status.Time.Format(time.RFC3339),
+        }
+        data, _ := json.Marshal(resp)
+        fmt.Fprintf(w, "data: %s\n\n", data)
+        flusher.Flush()
+    }
+
+    // Send final task completion event
+    final := struct {
+        TaskID     string `json:"task_id"`
+        Total      int    `json:"total"`
+        Completed  int    `json:"completed"`
+        InProgress bool   `json:"in_progress"`
+    }{
+        TaskID:     task.ID,
+        Total:      task.Total,
+        Completed:  task.Completed,
+        InProgress: task.InProgress,
+    }
+    data, _ := json.Marshal(final)
+    fmt.Fprintf(w, "data: %s\n\n", data)
+    flusher.Flush()
+}
+
+// Keep GetBulkEmailStatus for polling if needed
 func (c *UserController) GetBulkEmailStatus(w http.ResponseWriter, r *http.Request) {
     taskID := r.URL.Query().Get("task_id")
     if taskID == "" {
@@ -99,6 +169,12 @@ func (c *UserController) GetBulkEmailStatus(w http.ResponseWriter, r *http.Reque
     if !ok {
         http.Error(w, "Task not found", http.StatusNotFound)
         return
+    }
+	
+	type EmailStatus struct {
+        ID     string
+        Status string
+        Time   time.Time
     }
 
     type EmailStatusResponse struct {
@@ -123,32 +199,23 @@ func (c *UserController) GetBulkEmailStatus(w http.ResponseWriter, r *http.Reque
         Emails:     []EmailStatusResponse{},
     }
 
-    for email, id := range task.Emails {
-        if status, ok := task.Statuses.Load(id); ok {
-            // Use interface{} and type switch to handle email.EmailStatus
-            switch s := status.(type) {
-            case struct {
-                ID     string
-                Status string
-                Time   time.Time
-            }:
-                response.Emails = append(response.Emails, EmailStatusResponse{
-                    Email:  email,
-                    ID:     id,
-                    Status: s.Status,
-                    Time:   s.Time.Format(time.RFC3339),
-                })
-            default:
-                // Fallback if type doesn’t match
-                response.Emails = append(response.Emails, EmailStatusResponse{
-                    Email:  email,
-                    ID:     id,
-                    Status: "unknown",
-                    Time:   time.Now().Format(time.RFC3339),
-                })
+    task.Statuses.Range(func(key, value interface{}) bool {
+        status := value.(EmailStatus)
+        var email string
+        for e, id := range task.Emails {
+            if id == status.ID {
+                email = e
+                break
             }
         }
-    }
+        response.Emails = append(response.Emails, EmailStatusResponse{
+            Email:  email,
+            ID:     status.ID,
+            Status: status.Status,
+            Time:   status.Time.Format(time.RFC3339),
+        })
+        return true
+    })
 
     w.Header().Set("Content-Type", "application/json")
     json.NewEncoder(w).Encode(response)

@@ -29,6 +29,7 @@ type BulkTask struct {
     Completed  int
     Statuses   sync.Map
     InProgress bool
+    Updates    chan EmailStatus // Add channel for real-time updates
 }
 
 type EmailService struct {
@@ -85,12 +86,14 @@ func (s *EmailService) updateTaskStatus(emailID string, status EmailStatus) {
         task := value.(*BulkTask)
         if _, exists := task.Emails[status.ID]; exists {
             task.Statuses.Store(emailID, status)
+            task.Updates <- status // Send real-time update
             if status.Status == "completed" || status.Status == "failed" {
                 task.Completed++
                 s.logger.Log(fmt.Sprintf("Task %s: Completed %d/%d", task.ID, task.Completed, task.Total))
                 if task.Completed == task.Total {
                     task.InProgress = false
                     s.logger.Log(fmt.Sprintf("Task %s fully completed", task.ID))
+                    close(task.Updates) // Close channel when done
                 }
             }
         }
@@ -122,6 +125,7 @@ func (s *EmailService) SendBulk(recipients []string, subject, body string) strin
         Total:      len(recipients),
         Completed:  0,
         InProgress: true,
+        Updates:    make(chan EmailStatus, len(recipients)), // Buffer for updates
     }
     s.tasks.Store(taskID, task)
     s.logger.Log(fmt.Sprintf("Created task %s with %d emails", taskID, task.Total))
@@ -130,6 +134,7 @@ func (s *EmailService) SendBulk(recipients []string, subject, body string) strin
         for to, id := range ids {
             s.Send(to, subject, body, id)
             task.Statuses.Store(id, EmailStatus{ID: id, Status: "in_progress", Time: time.Now()})
+            task.Updates <- EmailStatus{ID: id, Status: "in_progress", Time: time.Now()}
         }
     }()
 

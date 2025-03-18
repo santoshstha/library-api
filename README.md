@@ -346,3 +346,7 @@ Notes
     Errors: If you get 401 Unauthorized, check the token. If connection refused, verify MySQL details.
 
 curl -X POST http://localhost:8080/bulk-emails -H "Authorization: Bearer token"
+
+curl "http://localhost:8080/bulk-emails/status?task_id=task_1742275710307097994" -H "Authorization: Bearer <token>"
+
+curl "http://localhost:8080/bulk-emails/status?task_id=task_1742287706095305689" -H "Authorization: Bearer <token>"
