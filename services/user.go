@@ -2,6 +2,7 @@ package services
 
 import (
 	"fmt"
+    "time"
 	"golang.org/x/crypto/bcrypt"
 	"library-api/email"
 	"library-api/models"
@@ -31,8 +32,10 @@ func (s *UserService) CreateUser(username, password, email string) (*models.User
 		return nil, err
 	}
 	// Send welcome email
+	// Send welcome email with a unique ID
 	s.EmailService.Send(email, "Welcome to the Library!",
-		fmt.Sprintf("Hi %s, welcome to our library system!", username))
+		fmt.Sprintf("Hi %s, welcome to our library system!", username),
+		fmt.Sprintf("welcome_%s_%d", username, time.Now().Unix()))
 	return user, nil
 }
 
